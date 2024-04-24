@@ -1,6 +1,6 @@
 import { ApolloServer } from "@apollo/server";
 import { startStandaloneServer } from "@apollo/server/standalone";
-import { user } from "./fake_data/index.js";
+import { user, deletedUsers } from "./fake_data/index.js";
 
 import typeDefs from "./schema/index.js";
 
@@ -9,6 +9,38 @@ import typeDefs from "./schema/index.js";
 const resolvers = {
   Query: {
     users: () => user,
+    deletedUsers: () => deletedUsers,
+  },
+  Mutation: {
+    deleteUser: (parent, arg, context, info) => {
+      const index = user.findIndex(
+        (user) => String(user.id) === String(arg.id)
+      );
+
+      if (index === -1) {
+        throw new Error(`User with id ${arg.id} not found`);
+      }
+
+      const [deletedUser] = user.splice(index, 1);
+      deletedUsers.push(deletedUser); // Add this line
+
+      return deletedUser;
+    },
+    restoreUser: (parent, arg, context, info) => {
+      // Add this mutation
+      const index = deletedUsers.findIndex(
+        (user) => String(user.id) === String(arg.id)
+      );
+
+      if (index === -1) {
+        throw new Error(`Deleted user with id ${arg.id} not found`);
+      }
+
+      const [restoredUser] = deletedUsers.splice(index, 1);
+      user.push(restoredUser);
+
+      return restoredUser;
+    },
   },
 };
 
